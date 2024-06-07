@@ -1,17 +1,45 @@
-const express = require('express');
-const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const express = require('express')
+const app = express()
 require('dotenv').config()
+const cors = require('cors')
+const cookieParser = require('cookie-parser')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
+const jwt = require('jsonwebtoken')
 
-const app = express();
 const port = process.env.PORT || 5000;
 
 
 
-// middleWire
 
-app.use(cors());
-app.use(express.json());
+
+// middleware
+const corsOptions = {
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true,
+    optionSuccessStatus: 200,
+  }
+
+  app.use(cors(corsOptions))
+
+app.use(express.json())
+app.use(cookieParser())
+
+// Verify Token Middleware
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token
+  console.log(token)
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      console.log(err)
+      return res.status(401).send({ message: 'unauthorized access' })
+    }
+    req.user = decoded
+    next()
+  })
+}
 
 
 
