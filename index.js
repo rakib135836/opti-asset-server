@@ -1,3 +1,6 @@
+
+
+
 const express = require('express')
 const app = express()
 require('dotenv').config()
@@ -6,20 +9,15 @@ const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 
-const port = process.env.PORT || 5000;
-
-
-
-
+const port = process.env.PORT || 5000
 
 // middleware
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
-    credentials: true,
-    optionSuccessStatus: 200,
-  }
-
-  app.use(cors(corsOptions))
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  optionSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
 
 app.use(express.json())
 app.use(cookieParser())
@@ -41,57 +39,86 @@ const verifyToken = async (req, res, next) => {
   })
 }
 
-
-
-// ---------------database------------------
-
-
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qtepxet.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+})
 
 async function run() {
-    try {
-        // Connect the client to the server	(optional starting in v4.7)
-
-
-
-
-    } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
-    }
-
-
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-} 
-
-run().catch(console.dir);
+  try {
+    const assetCollection = client.db('assetDB').collection('asset')
+  
 
 
 
 
 
+     // Save an asset data in db
+     app.post('/asset', async (req, res) => {
+      const assetData = req.body
+      const result = await assetCollection.insertOne(assetData)
+      res.send(result)
+    })
+
+    // auth related api
+    app.post('/jwt', async (req, res) => {
+      const user = req.body
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '365d',
+      })
+      res
+        .cookie('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        })
+        .send({ success: true })
+    })
+    // Logout
+    app.get('/logout', async (req, res) => {
+      try {
+        res
+          .clearCookie('token', {
+            maxAge: 0,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          })
+          .send({ success: true })
+        console.log('Logout successful')
+      } catch (err) {
+        res.status(500).send(err)
+      }
+    })
+
+   
 
 
-// --------------database-------------------
+    
+   
 
-
-
+   
+   
+    
+   
+    // Send a ping to confirm a successful connection
+    await client.db('admin').command({ ping: 1 })
+    console.log(
+      'Pinged your deployment. You successfully connected to MongoDB!'
+    )
+  } finally {
+    // Ensures that the client will close when you finish/error
+  }
+}
+run().catch(console.dir)
 
 app.get('/', (req, res) => {
-    res.send('server is runnig')
+  res.send('Hello from opti-Asset Server..')
 })
 
 app.listen(port, () => {
-    console.log(`server is running in port: ${port}`)
+  console.log(`opti-Asset is running on port ${port}`)
 })
