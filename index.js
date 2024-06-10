@@ -1,6 +1,3 @@
-
-
-
 const express = require('express')
 const app = express()
 require('dotenv').config()
@@ -39,7 +36,7 @@ const verifyToken = async (req, res, next) => {
   })
 }
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qtepxet.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qtepxet.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -51,30 +48,12 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const assetCollection = client.db('assetDB').collection('asset')
+    const usersCollection = client.db('assetDB').collection('user')
 
-
-
-
-     // save a user data in db
-     app.put('/user', async (req, res) => {
+    // save a user data in db
+    app.put('/user', async (req, res) => {
       const user = req.body
       const query = { email: user?.email }
-      // check if user already exists in db
-      const isExist = await usersCollection.findOne(query)
-      if (isExist) {
-        if (user.status === 'Requested') {
-          // if existing user try to change his role
-          const result = await usersCollection.updateOne(query, {
-            $set: { status: user?.status },
-          })
-          return res.send(result)
-        } else {
-          // if existing user login again
-          return res.send(isExist)
-        }
-      }
-
-      // save user for the first time
       const options = { upsert: true }
       const updateDoc = {
         $set: {
@@ -86,12 +65,6 @@ async function run() {
       res.send(result)
     })
 
-
-
-
-
-
-
     // Save an asset data in db
     app.post('/asset', async (req, res) => {
       const assetData = req.body
@@ -100,22 +73,18 @@ async function run() {
     })
 
     // email query for asset list
-
     app.get('/asset-lists/:email', async (req, res) => {
-
       console.log(req.params.email)
       console.log('tok tok token ', req.cookies)
-      let query = {};
+      let query = {}
       if (req.query?.email) {
         query = { email: req.query.email }
       }
-      const result = await assetCollection.find(query).toArray();
+      const result = await assetCollection.find(query).toArray()
       res.send(result)
-    });
-
+    })
 
     // delete an asset
-
     app.delete('/asset/:id', async (req, res) => {
       const id = req.params.id
       const query = { _id: new ObjectId(id) }
@@ -123,40 +92,35 @@ async function run() {
       res.send(result)
     })
 
-
-
-    // getting assets for update 
+    // getting assets for update
     app.get('/getting-assets/:id', async (req, res) => {
-      const id = req.params.id;
+      const id = req.params.id
       const query = { _id: new ObjectId(id) }
-      const result = await assetCollection.findOne(query);
-      res.send(result);
+      const result = await assetCollection.findOne(query)
+      res.send(result)
     })
 
-    // update asset 
+    // update asset
     app.put('/assets/:id', async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
+      const id = req.params.id
+      const filter = { _id: new ObjectId(id) }
       const update = {
         $set: {
           date: req.body.date,
           product: req.body.product,
-          quantity:req.body.quantity,
-          type:req.body.type
-        }
-      };
+          quantity: req.body.quantity,
+          type: req.body.type,
+        },
+      }
 
       try {
-        const result = await assetCollection.updateOne(filter, update);
-        res.send(result);
+        const result = await assetCollection.updateOne(filter, update)
+        res.send(result)
       } catch (err) {
-        console.error(err);
-        res.status(500).send("Error updating booking.");
+        console.error(err)
+        res.status(500).send("Error updating booking.")
       }
-    });
-
-
-
+    })
 
     // auth related api
     app.post('/jwt', async (req, res) => {
@@ -172,6 +136,7 @@ async function run() {
         })
         .send({ success: true })
     })
+
     // Logout
     app.get('/logout', async (req, res) => {
       try {
@@ -188,18 +153,8 @@ async function run() {
       }
     })
 
-
-
-
-
-
-
-
-
-
-
     // Send a ping to confirm a successful connection
-    await client.db('admin').command({ ping: 1 })
+    // await client.db('admin').command({ ping: 1 })
     console.log(
       'Pinged your deployment. You successfully connected to MongoDB!'
     )
