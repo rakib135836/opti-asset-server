@@ -51,18 +51,38 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const assetCollection = client.db('assetDB').collection('asset')
-  
 
 
 
 
 
-     // Save an asset data in db
-     app.post('/asset', async (req, res) => {
+
+    // Save an asset data in db
+    app.post('/asset', async (req, res) => {
       const assetData = req.body
       const result = await assetCollection.insertOne(assetData)
       res.send(result)
     })
+
+    // email query for user booking 
+
+    app.get('/asset-lists/:email', async (req, res) => {
+
+      console.log(req.params.email)
+      console.log('tok tok token ', req.cookies)
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const result = await assetCollection.find(query).toArray();
+      res.send(result)
+    });
+
+
+
+
+
+
 
     // auth related api
     app.post('/jwt', async (req, res) => {
@@ -94,16 +114,16 @@ async function run() {
       }
     })
 
-   
 
 
-    
-   
 
-   
-   
-    
-   
+
+
+
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
     console.log(
