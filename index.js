@@ -48,6 +48,9 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
+    const employeeCollection = client.db('employeeDB').collection('employee')
+    const hrCollection = client.db('employeeDB').collection('hr')
+
 
       // jwt related api
       app.post('/jwt', async (req, res) => {
@@ -82,6 +85,35 @@ async function run() {
       }
       next();
     }
+
+    //sending hr in data base 
+    app.post('/hrs', async (req, res) => {
+      const hr = req.body;
+      // insert email if user doesnt exists: 
+      // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
+      const query = { email: hr.email }
+      const existingHr = await hrCollection.findOne(query);
+      if (existingHr) {
+        return res.send({ message: 'hr already exists', insertedId: null })
+      }
+      const result = await hrCollection.insertOne(hr);
+      res.send(result);
+    });
+
+
+    //sending employee in data base 
+    app.post('/employees', async (req, res) => {
+      const employee = req.body;
+      // insert email if user doesnt exists: 
+      // you can do this many ways (1. email unique, 2. upsert 3. simple checking)
+      const query = { email: employee.email }
+      const existingEmployee = await employeeCollection.findOne(query);
+      if (existingEmployee) {
+        return res.send({ message: 'employee already exists', insertedId: null })
+      }
+      const result = await employeeCollection.insertOne(employee);
+      res.send(result);
+    });
 
     // --------------------- older code -------------------------------------
     // const assetCollection = client.db('assetDB').collection('asset')
