@@ -74,17 +74,38 @@ async function run() {
         next();
       })
     }
-    // use verify admin after verifyToken
+    // use verify hr after verifyToken
     const verifyHr = async (req, res, next) => {
       const email = req.decoded.email;
       const query = { email: email };
-      const user = await userCollection.findOne(query);
-      const isAdmin = user?.role === 'hr';
+      const user = await hrCollection.findOne(query);
+      const isAdmin = user?.identity === 'hr';
       if (!isAdmin) {
         return res.status(403).send({ message: 'forbidden access' });
       }
       next();
     }
+
+    // checking hr for is hr 
+    app.get('/hrs/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+  
+      if (email !== req.decoded.email) {
+          return res.status(403).send({ message: 'forbidden access' });
+      }
+  
+      const query = { email: email };
+      const user = await hrCollection.findOne(query);
+  
+      if (user && user.identity === 'hr') {
+          // If the user is an HR, send back the entire user object (or customize as needed)
+          res.send(user);
+      } else {
+          // If the user is not found or not an HR, send a 404 or appropriate message
+          res.status(404).send({ message: 'HR not found or user is not an HR' });
+      }
+  });
+  
 
     //sending hr in data base 
     app.post('/hrs', async (req, res) => {
