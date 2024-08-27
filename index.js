@@ -138,6 +138,25 @@ async function run() {
     });
 
 
+
+    // for asset list 
+    app.get('/assets', async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await assetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+// getting asset for update 
+    app.get('/assets/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await assetCollection.findOne(query);
+      res.send(result);
+    })
+
+
+
     // sending asset in database 
     app.post('/assets', async (req, res) => {
       const asset = req.body;
@@ -145,6 +164,37 @@ async function run() {
       res.send(result);
     });
 
+
+    // delete an asset from asset list 
+    app.delete('/assets/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await assetCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // update an asset 
+    app.patch('/assets/:id', async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedAsset = {
+        $set: {
+          name: item.name,
+          quantity: item.quantity,
+          type: item.type,
+        }
+      };
+    
+      try {
+        const result = await assetCollection.updateOne(filter, updatedAsset);
+        res.send({ modifiedCount: result.modifiedCount });
+      } catch (error) {
+        console.error("Error updating asset:", error);
+        res.status(500).send("An error occurred while updating the asset.");
+      }
+    });
+    
     // --------------------- older code -------------------------------------
     // const assetCollection = client.db('assetDB').collection('asset')
     // const usersCollection = client.db('assetDB').collection('user')
