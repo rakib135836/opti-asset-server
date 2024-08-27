@@ -50,6 +50,7 @@ async function run() {
 
     const employeeCollection = client.db('employeeDB').collection('employee')
     const hrCollection = client.db('employeeDB').collection('hr')
+    const assetCollection = client.db('employeeDB').collection('asset')
 
 
       // jwt related api
@@ -133,6 +134,14 @@ async function run() {
         return res.send({ message: 'employee already exists', insertedId: null })
       }
       const result = await employeeCollection.insertOne(employee);
+      res.send(result);
+    });
+
+
+    // sending asset in database 
+    app.post('/assets', async (req, res) => {
+      const asset = req.body;
+      const result = await assetCollection.insertOne(asset);
       res.send(result);
     });
 
