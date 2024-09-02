@@ -17,6 +17,8 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 const port = process.env.PORT || 5000
 // -------------------------------------4
 
@@ -51,16 +53,17 @@ async function run() {
     const employeeCollection = client.db('employeeDB').collection('employee')
     const hrCollection = client.db('employeeDB').collection('hr')
     const assetCollection = client.db('employeeDB').collection('asset')
+    const packageCollection = client.db('employeeDB').collection('package')
 
 
-      // jwt related api
-      app.post('/jwt', async (req, res) => {
-        const user = req.body;
-        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-        res.send({ token });
-      })
+    // jwt related api
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.send({ token });
+    })
 
-      // middlewares 
+    // middlewares 
     const verifyToken = (req, res, next) => {
       // console.log('inside verify token', req.headers.authorization);
       if (!req.headers.authorization) {
@@ -90,23 +93,23 @@ async function run() {
     // checking hr for is hr 
     app.get('/hrs/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-  
+
       if (email !== req.decoded.email) {
-          return res.status(403).send({ message: 'forbidden access' });
+        return res.status(403).send({ message: 'forbidden access' });
       }
-  
+
       const query = { email: email };
       const user = await hrCollection.findOne(query);
-  
+
       if (user && user.identity === 'hr') {
-          // If the user is an HR, send back the entire user object (or customize as needed)
-          res.send(user);
+        // If the user is an HR, send back the entire user object (or customize as needed)
+        res.send(user);
       } else {
-          // If the user is not found or not an HR, send a 404 or appropriate message
-          res.status(404).send({ message: 'HR not found or user is not an HR' });
+        // If the user is not found or not an HR, send a 404 or appropriate message
+        res.status(404).send({ message: 'HR not found or user is not an HR' });
       }
-  });
-  
+    });
+
 
     //sending hr in data base 
     app.post('/hrs', async (req, res) => {
@@ -147,7 +150,7 @@ async function run() {
       res.send(result);
     });
 
-// getting asset for update 
+    // getting asset for update 
     app.get('/assets/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -185,7 +188,6 @@ async function run() {
           type: item.type,
         }
       };
-    
       try {
         const result = await assetCollection.updateOne(filter, updatedAsset);
         res.send({ modifiedCount: result.modifiedCount });
@@ -194,7 +196,41 @@ async function run() {
         res.status(500).send("An error occurred while updating the asset.");
       }
     });
-    
+
+    // getting subscription 
+    app.get('/subscriptions', async (req, res) => {
+      const result = await packageCollection.find().toArray();
+      res.send(result);
+    });
+
+     // getting packages for sending price 
+     app.get('/subscriptions/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await packageCollection.findOne(query);
+      res.send(result);
+    })
+
+
+    // payment intent
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount, 'amount inside the intent')
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    });
+
+    // 
+
     // --------------------- older code -------------------------------------
     // const assetCollection = client.db('assetDB').collection('asset')
     // const usersCollection = client.db('assetDB').collection('user')
