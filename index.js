@@ -90,10 +90,32 @@ async function run() {
       next();
     }
 
-    // checking hr for is hr 
+    // checking  if the user i an hr and that hr is paid or not 
+
+
+    // app.get('/hrs/:email', verifyToken, async (req, res) => {
+    //   const email = req.params.email;
+
+    //   if (email !== req.decoded.email) {
+    //     return res.status(403).send({ message: 'forbidden access' });
+    //   }
+
+    //   const query = { email: email };
+    //   const user = await hrCollection.findOne(query);
+
+    //   if (user && user.identity === 'hr') {
+    //     // If the user is an HR, send back the entire user object (or customize as needed)
+    //     res.send(user);
+    //   } else {
+    //     // If the user is not found or not an HR, send a 404 or appropriate message
+    //     res.status(404).send({ message: 'HR not found or user is not an HR' });
+    //   }
+    // });
+
     app.get('/hrs/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
 
+      // Ensure the request is authenticated and email matches
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'forbidden access' });
       }
@@ -102,13 +124,17 @@ async function run() {
       const user = await hrCollection.findOne(query);
 
       if (user && user.identity === 'hr') {
-        // If the user is an HR, send back the entire user object (or customize as needed)
-        res.send(user);
+        // Check if the HR has a 'paid' status
+        if (user.status === 'paid') {
+          res.send({ ...user, message: 'HR is paid' });
+        } else {
+          res.send({ ...user, message: 'HR is not paid' });
+        }
       } else {
-        // If the user is not found or not an HR, send a 404 or appropriate message
         res.status(404).send({ message: 'HR not found or user is not an HR' });
       }
     });
+
 
 
     //sending hr in data base 
@@ -124,6 +150,81 @@ async function run() {
       const result = await hrCollection.insertOne(hr);
       res.send(result);
     });
+
+
+    // update an status 
+    app.patch('/hrs/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedStatus = {
+        $set: {
+          status: 'paid',
+        }
+      };
+      try {
+        const result = await hrCollection.updateOne(filter, updatedStatus);
+        res.send({ modifiedCount: result.modifiedCount });
+      } catch (error) {
+        console.error("Error updating status:", error);
+        res.status(500).send("An error occurred while updating the status.");
+      }
+    });
+
+
+    // updating the employees in employees array in hr collection and status update in employee collection
+
+
+    // Add employees to HR and update their status
+    app.post('/add-employees-to-hr', verifyToken, verifyHr, async (req, res) => {
+      const { employeeIds } = req.body;
+      const hrEmail = req.decoded.email;
+
+      try {
+        // Step 1: Find employee details by their IDs
+        const employees = await employeeCollection.find({
+          _id: { $in: employeeIds.map(id => new ObjectId(id)) }
+        }).toArray();
+
+        // Step 2: Update the status of selected employees to 'affiliated' and hrEmail
+        const filter = { _id: { $in: employeeIds.map(id => new ObjectId(id)) } };
+        const update = {
+          $set: {
+            status: 'affiliated',
+            hrEmail: hrEmail
+          }
+        };
+        await employeeCollection.updateMany(filter, update);
+
+        // Step 3: Prepare the employees array for the HR collection with id, name, and email
+        const employeeDetails = employees.map(employee => ({
+          _id: employee._id,
+          name: employee.name,
+          email: employee.email,
+          photo: employee.photo
+        }));
+
+        // Step 4: Add the detailed employee objects to HR's employees array
+        const hrFilter = { email: hrEmail };
+        const hrUpdate = { $addToSet: { employees: { $each: employeeDetails } } };
+        const hrResult = await hrCollection.updateOne(hrFilter, hrUpdate);
+
+        res.send({ message: 'Employees added successfully and status updated', hrResult });
+      } catch (error) {
+        console.error('Error adding employees:', error);
+        res.status(500).send({ message: 'Error adding employees or updating status', error });
+      }
+    });
+
+
+
+
+
+    // getting not affiliated employees
+    app.get('/employees', async (req, res) => {
+      const query = { status: { $ne: 'affiliated' } };
+      const result = await employeeCollection.find(query).toArray();
+      res.send(result);
+    })
 
 
     //sending employee in data base 
@@ -143,7 +244,7 @@ async function run() {
 
 
     // for asset list 
-    app.get('/assets', async (req, res) => {
+    app.get('/assets', verifyToken, verifyHr, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await assetCollection.find(query).toArray();
@@ -161,7 +262,7 @@ async function run() {
 
 
     // sending asset in database 
-    app.post('/assets', async (req, res) => {
+    app.post('/assets', verifyToken, verifyHr, async (req, res) => {
       const asset = req.body;
       const result = await assetCollection.insertOne(asset);
       res.send(result);
@@ -203,8 +304,8 @@ async function run() {
       res.send(result);
     });
 
-     // getting packages for sending price 
-     app.get('/subscriptions/:id', async (req, res) => {
+    // getting packages for sending price 
+    app.get('/subscriptions/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await packageCollection.findOne(query);
