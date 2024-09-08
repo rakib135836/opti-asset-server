@@ -359,15 +359,41 @@ async function run() {
 
     // reject a request 
 
-    app.delete('/requested-asset/:id',async(req,res)=>{
-      const id =req.params.id;
-      const query={_id:new ObjectId(id)};
-      const result=await requestedAssetCollection.deleteOne(query);
+    app.delete('/requested-asset/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await requestedAssetCollection.deleteOne(query);
       res.send(result);
     })
 
+    // approve a request 
 
+    app.patch('/requested-asset/:id', async (req, res) => {
+      const id = req.params.id;
+      const approvalDate = req.body.approvalDate;
+      const query = { _id: new ObjectId(id) };
+      const updatedStatus = {
+        $set: {
+          status: 'approved',
+          approvalDate:approvalDate,
+          
 
+        }
+      };
+      const result = await requestedAssetCollection.updateOne(query, updatedStatus);
+      res.send(result);
+    })
+
+    // my requested for employee
+
+    app.get('/my-requested-asset/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await requestedAssetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // 
     // getting subscription 
     app.get('/subscriptions', async (req, res) => {
       const result = await packageCollection.find().toArray();
