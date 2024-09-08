@@ -54,6 +54,7 @@ async function run() {
     const hrCollection = client.db('employeeDB').collection('hr')
     const assetCollection = client.db('employeeDB').collection('asset')
     const packageCollection = client.db('employeeDB').collection('package')
+    const requestedAssetCollection = client.db('employeeDB').collection('requestedAsset')
 
 
     // jwt related api
@@ -90,31 +91,7 @@ async function run() {
       next();
     }
 
-    // checking  if the user i an hr and that hr is paid or not 
 
-
-
-
-
-
-    // app.get('/hrs/:email', verifyToken, async (req, res) => {
-    //   const email = req.params.email;
-
-    //   if (email !== req.decoded.email) {
-    //     return res.status(403).send({ message: 'forbidden access' });
-    //   }
-
-    //   const query = { email: email };
-    //   const user = await hrCollection.findOne(query);
-
-    //   if (user && user.identity === 'hr') {
-    //     // If the user is an HR, send back the entire user object (or customize as needed)
-    //     res.send(user);
-    //   } else {
-    //     // If the user is not found or not an HR, send a 404 or appropriate message
-    //     res.status(404).send({ message: 'HR not found or user is not an HR' });
-    //   }
-    // });
 
     app.get('/hrs/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -354,36 +331,40 @@ async function run() {
 
     // getting assets for request for an asset 
 
-    app.get('/for-request', async (req, res) => {
-      const result = await assetCollection.find().toArray();
+    app.get('/for-request/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email }
+      const result = await assetCollection.find(query).toArray();
       res.send(result);
     })
 
 
+    // getting requested assets for all requested (hr)
+    app.get('/requested-asset/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { hrEmail: email };
+      const result = await requestedAssetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+
     // Route to handle asset request
-    app.put('/assets/:id/request', async (req, res) => {
-      const assetId = req.params.id;
-      const { name, email, note, requestedDate,status,approvalDate } = req.body;  
+    app.post('/requested-asset', async (req, res) => {
 
-      const filter = { _id: new ObjectId(assetId) };
-      const update = {
-        $push: {
-          requests: {
-            name,
-            email,
-            note,
-            requestedDate,
-            approvalDate,
-            status
-          }
-        }
-      };
-
-
-      const result = await assetCollection.updateOne(filter, update);
+      const requesterInfo = req.body;
+      const result = await requestedAssetCollection.insertOne(requesterInfo);
       res.send(result);
 
     });
+
+    // reject a request 
+
+    app.delete('/requested-asset/:id',async(req,res)=>{
+      const id =req.params.id;
+      const query={_id:new ObjectId(id)};
+      const result=await requestedAssetCollection.deleteOne(query);
+      res.send(result);
+    })
 
 
 
