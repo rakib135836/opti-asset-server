@@ -408,6 +408,19 @@ async function run() {
       res.send(result);
     });
 
+    // my asset for employee
+
+    app.get('/my-asset/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        email: email,
+        status: 'approved'
+      }
+        const result = await requestedAssetCollection.find(query).toArray();
+        res.send(result);  
+    });
+    
+
     // 
     // getting subscription 
     app.get('/subscriptions', async (req, res) => {
