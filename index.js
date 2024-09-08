@@ -384,6 +384,21 @@ async function run() {
       res.send(result);
     })
 
+// my requested for employee  updating return status 
+
+    app.patch('/my-requested-asset/:id', async (req, res) => {
+      const id = req.params.id;
+      
+      const query = { _id: new ObjectId(id) };
+      const updatedStatus = {
+        $set: {
+          status: 'returned',
+        }
+      };
+      const result = await requestedAssetCollection.updateOne(query, updatedStatus);
+      res.send(result);
+    })
+
     // my requested for employee
 
     app.get('/my-requested-asset/:email', async (req, res) => {
