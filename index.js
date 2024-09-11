@@ -463,8 +463,50 @@ async function run() {
         res.send(result);
      
     });
-    
 
+
+     // for hr home||  pending requests
+     app.get('/hr-home/pending/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        hrEmail: email,
+        status: 'pending'
+      };
+    
+        const result = await requestedAssetCollection.find(query).limit(5).toArray();
+        res.send(result);
+    });
+    
+    
+      // for hr home||  top most requested 
+      app.get('/top-requested-assets/:hrEmail', async (req, res) => {
+        const hrEmail = req.params.hrEmail; 
+      
+        try {
+          const result = await requestedAssetCollection.aggregate([
+            {
+              $match: { hrEmail: hrEmail } 
+            },
+            {
+              $group: {
+                _id: "$asset",  
+                count: { $sum: 1 }  
+              }
+            },
+            {
+              $sort: { count: -1 }  
+            },
+            {
+              $limit: 4 
+            }
+          ]).toArray();
+      
+          res.send(result);
+        } catch (error) {
+          res.status(500).send({ error: 'An error occurred while fetching top requested assets.' });
+        }
+      });
+      
 
 
 
