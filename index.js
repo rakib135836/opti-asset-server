@@ -92,7 +92,9 @@ async function run() {
     }
 
 
-
+    // =================
+    // ----hrs-------
+    // =================
     app.get('/hrs/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
 
@@ -225,7 +227,14 @@ async function run() {
       }
     });
 
+    // =================
+    // ----hrs-------
+    // =================
 
+
+    // =================
+    // ----employees-------
+    // =================
 
     // getting employees for useAffiliated hook 
 
@@ -272,7 +281,15 @@ async function run() {
     });
 
 
+    // =================
+    // ----employees-------
+    // =================
 
+
+
+    // =================
+    // ----Asset-------
+    // =================
     // for asset list 
     app.get('/assets', verifyToken, verifyHr, async (req, res) => {
       const email = req.query.email;
@@ -375,8 +392,8 @@ async function run() {
       const updatedStatus = {
         $set: {
           status: 'approved',
-          approvalDate:approvalDate,
-          
+          approvalDate: approvalDate,
+
 
         }
       };
@@ -384,11 +401,11 @@ async function run() {
       res.send(result);
     })
 
-// my requested for employee  updating return status 
+    // my requested for employee  updating return status 
 
     app.patch('/my-requested-asset/:id', async (req, res) => {
       const id = req.params.id;
-      
+
       const query = { _id: new ObjectId(id) };
       const updatedStatus = {
         $set: {
@@ -416,11 +433,51 @@ async function run() {
         email: email,
         status: 'approved'
       }
+      const result = await requestedAssetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+
+    // for employee home|| my pending requests
+    app.get('/employee-requests/pending/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {
+        email: email,
+        status: 'pending'
+      };
+      const result = await requestedAssetCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // for employee home|| my monthly requests
+
+    app.get('/employee-requests/month/:email', async (req, res) => {
+      const email = req.params.email;
+      const { month } = req.query;
+    
+      const query = {
+        email: email,
+        month: parseInt(month)  // Ensure month is an integer
+      };
         const result = await requestedAssetCollection.find(query).toArray();
-        res.send(result);  
+        res.send(result);
+     
     });
     
 
+
+
+
+    // =================
+    // ----Asset-------
+    // =================
+
+
+
+
+    // =================
+    // ----packages-------
+    // =================
     // 
     // getting subscription 
     app.get('/subscriptions', async (req, res) => {
@@ -436,6 +493,10 @@ async function run() {
       res.send(result);
     })
 
+
+    // =================
+    // ----packages-------
+    // =================
 
     // payment intent
     app.post('/create-payment-intent', async (req, res) => {
@@ -456,97 +517,9 @@ async function run() {
 
     // 
 
+
+
     // --------------------- older code -------------------------------------
-    // const assetCollection = client.db('assetDB').collection('asset')
-    // const usersCollection = client.db('assetDB').collection('user')
-
-    // save a user data in db
-    // app.put('/user', async (req, res) => {
-    //   const user = req.body
-    //   const query = { email: user?.email }
-    //   const options = { upsert: true }
-    //   const updateDoc = {
-    //     $set: {
-    //       ...user,
-    //       timestamp: Date.now(),
-    //     },
-    //   }
-    //   const result = await usersCollection.updateOne(query, updateDoc, options)
-    //   res.send(result)
-    // })
-
-    // Save an asset data in db
-    // app.post('/asset', async (req, res) => {
-    //   const assetData = req.body
-    //   const result = await assetCollection.insertOne(assetData)
-    //   res.send(result)
-    // })
-
-    // email query for asset list
-    // app.get('/asset-lists/:email', async (req, res) => {
-    //   console.log(req.params.email)
-    //   console.log('tok tok token ', req.cookies)
-    //   let query = {}
-    //   if (req.query?.email) {
-    //     query = { email: req.query.email }
-    //   }
-    //   const result = await assetCollection.find(query).toArray()
-    //   res.send(result)
-    // })
-
-    // delete an asset
-    // app.delete('/asset/:id', async (req, res) => {
-    //   const id = req.params.id
-    //   const query = { _id: new ObjectId(id) }
-    //   const result = await assetCollection.deleteOne(query)
-    //   res.send(result)
-    // })
-
-    // getting assets for update
-    // app.get('/getting-assets/:id', async (req, res) => {
-    //   const id = req.params.id
-    //   const query = { _id: new ObjectId(id) }
-    //   const result = await assetCollection.findOne(query)
-    //   res.send(result)
-    // })
-
-    // update asset
-    // app.put('/assets/:id', async (req, res) => {
-    //   const id = req.params.id
-    //   const filter = { _id: new ObjectId(id) }
-    //   const update = {
-    //     $set: {
-    //       date: req.body.date,
-    //       product: req.body.product,
-    //       quantity: req.body.quantity,
-    //       type: req.body.type,
-    //     },
-    //   }
-
-    //   try {
-    //     const result = await assetCollection.updateOne(filter, update)
-    //     res.send(result)
-    //   } catch (err) {
-    //     console.error(err)
-    //     res.status(500).send("Error updating booking.")
-    //   }
-    // })
-
-    // auth related api
-    // app.post('/jwt', async (req, res) => {
-    //   const user = req.body
-    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-    //     expiresIn: '365d',
-    //   })
-    //   res
-    //     .cookie('token', token, {
-    //       httpOnly: true,
-    //       secure: process.env.NODE_ENV === 'production',
-    //       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    //     })
-    //     .send({ success: true })
-    // })
-
     // Logout
     // app.get('/logout', async (req, res) => {
     //   try {
