@@ -454,60 +454,95 @@ async function run() {
     app.get('/employee-requests/month/:email', async (req, res) => {
       const email = req.params.email;
       const { month } = req.query;
-    
+
       const query = {
         email: email,
         month: parseInt(month)  // Ensure month is an integer
       };
-        const result = await requestedAssetCollection.find(query).toArray();
-        res.send(result);
-     
+      const result = await requestedAssetCollection.find(query).toArray();
+      res.send(result);
+
     });
 
 
-     // for hr home||  pending requests
-     app.get('/hr-home/pending/:email', async (req, res) => {
+    // for hr home||  pending requests
+    app.get('/hr-home/pending/:email', async (req, res) => {
       const email = req.params.email;
       const query = {
         hrEmail: email,
         status: 'pending'
       };
-    
-        const result = await requestedAssetCollection.find(query).limit(5).toArray();
+
+      const result = await requestedAssetCollection.find(query).limit(5).toArray();
+      res.send(result);
+    });
+
+
+    // for hr home||  top most requested 
+    app.get('/top-requested-assets/:hrEmail', async (req, res) => {
+      const hrEmail = req.params.hrEmail;
+
+      try {
+        const result = await requestedAssetCollection.aggregate([
+          {
+            $match: { hrEmail: hrEmail }
+          },
+          {
+            $group: {
+              _id: "$asset",
+              count: { $sum: 1 }
+            }
+          },
+          {
+            $sort: { count: -1 }
+          },
+          {
+            $limit: 4
+          }
+        ]).toArray();
+
         res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: 'An error occurred while fetching top requested assets.' });
+      }
+    });
+
+
+    // for hr home||  limited stock items 
+
+    app.get('/limited-stock-items/:hrEmail', async (req, res) => {
+      const hrEmail = req.params.hrEmail;
+
+      const result = await assetCollection.find({
+        email: hrEmail,
+        quantity: { $lt: 10 }
+      }).toArray();
+
+      res.send(result);
+
+    });
+
+
+    // for hr home||  pie chart 
+    
+    app.get('/asset-type-count/:hrEmail', async (req, res) => {
+      const hrEmail = req.params.hrEmail;
+    
+      const result = await assetCollection.aggregate([
+        {
+          $match: { email: hrEmail }  // Match assets by email
+        },
+        {
+          $group: {
+            _id: "$type",           // Group by the type field (Returnable or Not Returnable)
+            count: { $sum: 1 }      // Count the number of each type
+          }
+        }
+      ]).toArray();
+    
+      res.send(result);
     });
     
-    
-      // for hr home||  top most requested 
-      app.get('/top-requested-assets/:hrEmail', async (req, res) => {
-        const hrEmail = req.params.hrEmail; 
-      
-        try {
-          const result = await requestedAssetCollection.aggregate([
-            {
-              $match: { hrEmail: hrEmail } 
-            },
-            {
-              $group: {
-                _id: "$asset",  
-                count: { $sum: 1 }  
-              }
-            },
-            {
-              $sort: { count: -1 }  
-            },
-            {
-              $limit: 4 
-            }
-          ]).toArray();
-      
-          res.send(result);
-        } catch (error) {
-          res.status(500).send({ error: 'An error occurred while fetching top requested assets.' });
-        }
-      });
-      
-
 
 
     // =================
