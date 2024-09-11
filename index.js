@@ -227,6 +227,22 @@ async function run() {
       }
     });
 
+
+    // update hr profile 
+    app.patch('/profile-update/:id', async (req, res) => {
+      const id = req.params.id;
+      const { name } = req.body; // Extract name from the request body
+      const query = { _id: new ObjectId(id) };
+      const updatedProfile = {
+          $set: {
+              name: name // Set the name directly
+          }
+      };
+      const result = await hrCollection.updateOne(query, updatedProfile);
+      res.send(result);
+  });
+  
+
     // =================
     // ----hrs-------
     // =================
@@ -279,6 +295,20 @@ async function run() {
       const result = await employeeCollection.insertOne(employee);
       res.send(result);
     });
+
+    // update employee profile 
+    app.patch('/employee-profile-update/:id', async (req, res) => {
+      const id = req.params.id;
+      const { name } = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updatedProfile = {
+          $set: {
+              name: name 
+          }
+      };
+      const result = await employeeCollection.updateOne(query, updatedProfile);
+      res.send(result);
+  });
 
 
     // =================
