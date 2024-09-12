@@ -150,10 +150,12 @@ async function run() {
     // update an status 
     app.patch('/hrs/:id', async (req, res) => {
       const id = req.params.id;
+      const {paidAmount}=req.body
       const filter = { _id: new ObjectId(id) };
       const updatedStatus = {
         $set: {
           status: 'paid',
+          amount:paidAmount,
         }
       };
       try {
@@ -455,6 +457,8 @@ async function run() {
       res.send(result);
     });
 
+
+
     // my asset for employee
 
     app.get('/my-asset/:email', async (req, res) => {
@@ -560,12 +564,12 @@ async function run() {
     
       const result = await assetCollection.aggregate([
         {
-          $match: { email: hrEmail }  // Match assets by email
+          $match: { email: hrEmail }  
         },
         {
           $group: {
-            _id: "$type",           // Group by the type field (Returnable or Not Returnable)
-            count: { $sum: 1 }      // Count the number of each type
+            _id: "$type",          
+            count: { $sum: 1 }      
           }
         }
       ]).toArray();
